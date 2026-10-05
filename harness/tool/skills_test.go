@@ -126,3 +126,38 @@ func TestDiscoverSkillsRejectsInvalidMetadataAndDuplicateNames(t *testing.T) {
 		}
 	}
 }
+
+func TestParseSkillFrontmatterYAMLSemantics(t *testing.T) {
+	for _, tc := range []struct {
+		name, metadata, wantName, wantDescription string
+	}{
+		{
+			"quoted",
+			"---\nname: \"review\"\ndescription: 'Review code.'\n---\n",
+			"review",
+			"Review code.",
+		},
+		{
+			"folded",
+			"---\nname: review\ndescription: >-\n  Review pull requests\n  carefully.\n---\n",
+			"review",
+			"Review pull requests carefully.",
+		},
+		{
+			"comment",
+			"---\nname: review # primary\ndescription: Review code.\n---\n",
+			"review",
+			"Review code.",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseSkillFrontmatter([]byte(tc.metadata))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Name != tc.wantName || got.Description != tc.wantDescription {
+				t.Fatalf("got %#v, want name=%q description=%q", got, tc.wantName, tc.wantDescription)
+			}
+		})
+	}
+}
